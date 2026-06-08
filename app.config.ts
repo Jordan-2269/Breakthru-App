@@ -10,11 +10,13 @@ export default (): ExpoConfig => ({
   userInterfaceStyle: 'light',
   ios: {
     supportsTablet: true,
+    bundleIdentifier: 'com.breakthru.autismservices',
     config: {
       googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
     },
   },
   android: {
+    package: 'com.breakthru.autismservices',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/android-icon-foreground.png',
@@ -47,5 +49,10 @@ export default (): ExpoConfig => ({
   ],
   experiments: {
     typedRoutes: true,
+  },
+  extra: {
+    eas: {
+      projectId: '1830d406-53ce-4f13-bcf8-9d7fd1d66889',
+    },
   },
 });
