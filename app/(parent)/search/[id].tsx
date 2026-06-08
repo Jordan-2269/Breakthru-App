@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, Image, TouchableOpacity,
-  ActivityIndicator, Linking
+  ActivityIndicator, Linking, Modal, TextInput
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBusinessDetail } from '@/hooks/useBusinessListings';
 import { useOrCreateConversation } from '@/hooks/useMessages';
 import { useSavedListingIds, useToggleSaveListing } from '@/hooks/useSavedListings';
+import { useListingReviews, useMyReview, useSubmitReview } from '@/hooks/useReviews';
 import { useChildStore } from '@/store/childStore';
+import { useAuth } from '@/lib/auth';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { StarRating } from '@/components/ui/StarRating';
@@ -20,12 +22,35 @@ import { PRICE_RANGE_LABELS } from '@/lib/constants';
 export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { role } = useAuth();
   const { data: listing, isLoading } = useBusinessDetail(id);
   const { mutateAsync: getOrCreate, isPending } = useOrCreateConversation();
   const { data: savedIds } = useSavedListingIds();
   const { mutate: toggleSave } = useToggleSaveListing();
+  const { data: reviews } = useListingReviews(id);
+  const { data: myReview } = useMyReview(id);
+  const { mutate: submitReview, isPending: submittingReview } = useSubmitReview(id);
   const activeChild = useChildStore((s) => s.activeChild);
   const isSaved = savedIds?.has(id) ?? false;
+
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(myReview?.rating ?? 5);
+  const [reviewTitle, setReviewTitle] = useState(myReview?.title ?? '');
+  const [reviewBody, setReviewBody] = useState(myReview?.body ?? '');
+
+  function openReviewModal() {
+    setReviewRating(myReview?.rating ?? 5);
+    setReviewTitle(myReview?.title ?? '');
+    setReviewBody(myReview?.body ?? '');
+    setShowReviewModal(true);
+  }
+
+  function handleSubmitReview() {
+    submitReview(
+      { rating: reviewRating, title: reviewTitle, body: reviewBody },
+      { onSuccess: () => setShowReviewModal(false) },
+    );
+  }
 
   async function handleMessage() {
     const conv = await getOrCreate({ listingId: id, childId: activeChild?.id });
@@ -194,6 +219,46 @@ export default function BusinessDetailScreen() {
             </View>
           </View>
 
+          {/* Reviews */}
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <SectionTitle title={`Reviews (${listing.review_count ?? 0})`} />
+              {role === 'parent' && (
+                <TouchableOpacity
+                  onPress={openReviewModal}
+                  style={{ backgroundColor: '#0A66C2', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}
+                >
+                  <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>
+                    {myReview ? 'Edit Review' : '+ Write Review'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {reviews && reviews.length > 0 ? (
+              reviews.map((r) => (
+                <View key={r.id} style={{ backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E8E8E8', padding: 14, marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <Avatar name={r.reviewer?.display_name ?? 'A'} uri={r.reviewer?.avatar_url} size="sm" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#191919' }}>
+                        {r.reviewer?.display_name ?? 'Anonymous'}
+                      </Text>
+                      <StarRating rating={r.rating} size={11} />
+                    </View>
+                    <Text style={{ fontSize: 11, color: '#999' }}>
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  {r.title && <Text style={{ fontSize: 13, fontWeight: '600', color: '#191919', marginBottom: 4 }}>{r.title}</Text>}
+                  {r.body && <Text style={{ fontSize: 13, color: '#555', lineHeight: 19 }}>{r.body}</Text>}
+                </View>
+              ))
+            ) : (
+              <Text style={{ fontSize: 13, color: '#999', fontStyle: 'italic' }}>No reviews yet. Be the first to review!</Text>
+            )}
+          </View>
+
           {/* Claim banner */}
           {!listing.is_claimed && (
             <View className="bg-orange-50 border border-orange-200 rounded-xl p-4">
@@ -213,17 +278,77 @@ export default function BusinessDetailScreen() {
       </ScrollView>
 
       {/* Message CTA */}
-      {listing.is_claimed && listing.owner_id && (
-        <View className="px-4 py-3 bg-surface border-t border-border">
-          <Button
-            label="Message Business"
-            onPress={handleMessage}
-            loading={isPending}
-            fullWidth
-            size="lg"
-          />
-        </View>
-      )}
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E8E8E8' }}>
+        <Button
+          label="Message Business"
+          onPress={handleMessage}
+          loading={isPending}
+          fullWidth
+          size="lg"
+        />
+        {!listing.is_claimed && (
+          <Text style={{ fontSize: 11, color: '#999', textAlign: 'center', marginTop: 6 }}>
+            This listing is unclaimed — your message will be saved for when they join.
+          </Text>
+        )}
+      </View>
+
+      {/* Review Modal */}
+      <Modal visible={showReviewModal} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setShowReviewModal(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F2EE' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E8E8E8' }}>
+            <TouchableOpacity onPress={() => setShowReviewModal(false)}>
+              <Text style={{ color: '#0A66C2', fontSize: 15 }}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#191919' }}>
+              {myReview ? 'Edit Review' : 'Write a Review'}
+            </Text>
+            <View style={{ width: 50 }} />
+          </View>
+
+          <ScrollView style={{ flex: 1, padding: 20 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#191919', marginBottom: 12 }}>Your Rating</Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity key={star} onPress={() => setReviewRating(star)}>
+                  <Text style={{ fontSize: 36, opacity: star <= reviewRating ? 1 : 0.25 }}>⭐</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#191919', marginBottom: 6 }}>Title (optional)</Text>
+            <TextInput
+              value={reviewTitle}
+              onChangeText={setReviewTitle}
+              placeholder="Summarise your experience…"
+              placeholderTextColor="#AAA"
+              style={{ backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1, borderColor: '#E0E0E0', padding: 12, fontSize: 14, color: '#191919', marginBottom: 16, outlineWidth: 0 } as any}
+            />
+
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#191919', marginBottom: 6 }}>Review (optional)</Text>
+            <TextInput
+              value={reviewBody}
+              onChangeText={setReviewBody}
+              placeholder="Tell families about your experience…"
+              placeholderTextColor="#AAA"
+              multiline
+              numberOfLines={5}
+              style={{ backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1, borderColor: '#E0E0E0', padding: 12, fontSize: 14, color: '#191919', minHeight: 110, textAlignVertical: 'top', marginBottom: 24, outlineWidth: 0 } as any}
+            />
+
+            <TouchableOpacity
+              onPress={handleSubmitReview}
+              disabled={submittingReview}
+              style={{ backgroundColor: '#0A66C2', borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
+            >
+              {submittingReview
+                ? <ActivityIndicator color="#FFF" />
+                : <Text style={{ color: '#FFF', fontSize: 15, fontWeight: '700' }}>Submit Review</Text>
+              }
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }

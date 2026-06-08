@@ -3,19 +3,19 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 
 export function useSavedListingIds() {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['saved-listing-ids', user?.id],
+    queryKey: ['saved-ids', user?.id],
     queryFn: async (): Promise<Set<string>> => {
+      if (!user) return new Set();
       const { data } = await supabase
         .from('saved_listings')
         .select('listing_id')
-        .eq('parent_id', user!.id);
-      return new Set((data ?? []).map((r: any) => r.listing_id as string));
+        .eq('parent_id', user.id);
+      return new Set((data ?? []).map((r: any) => r.listing_id));
     },
-    enabled: !!user && role === 'parent',
-    staleTime: 30_000,
+    enabled: !!user,
   });
 }
 
@@ -25,38 +25,37 @@ export function useToggleSaveListing() {
 
   return useMutation({
     mutationFn: async ({ listingId, isSaved }: { listingId: string; isSaved: boolean }) => {
+      if (!user) return;
       if (isSaved) {
         const { error } = await supabase
           .from('saved_listings')
           .delete()
-          .eq('parent_id', user!.id)
+          .eq('parent_id', user.id)
           .eq('listing_id', listingId);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('saved_listings')
-          .insert({ parent_id: user!.id, listing_id: listingId });
+          .insert({ parent_id: user.id, listing_id: listingId });
         if (error) throw error;
       }
     },
     onMutate: async ({ listingId, isSaved }) => {
-      await qc.cancelQueries({ queryKey: ['saved-listing-ids', user?.id] });
-      const previous = qc.getQueryData<Set<string>>(['saved-listing-ids', user?.id]);
-      qc.setQueryData<Set<string>>(['saved-listing-ids', user?.id], (old) => {
+      await qc.cancelQueries({ queryKey: ['saved-ids', user?.id] });
+      const prev = qc.getQueryData<Set<string>>(['saved-ids', user?.id]);
+      qc.setQueryData<Set<string>>(['saved-ids', user?.id], (old) => {
         const next = new Set(old ?? []);
         if (isSaved) next.delete(listingId);
         else next.add(listingId);
         return next;
       });
-      return { previous };
+      return { prev };
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) {
-        qc.setQueryData(['saved-listing-ids', user?.id], ctx.previous);
-      }
+      if (ctx?.prev) qc.setQueryData(['saved-ids', user?.id], ctx.prev);
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['saved-listing-ids', user?.id] });
+      qc.invalidateQueries({ queryKey: ['saved-ids', user?.id] });
       qc.invalidateQueries({ queryKey: ['saved-listings', user?.id] });
     },
   });

@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -36,6 +37,8 @@ export default function DashboardScreen() {
     },
     enabled: !!user,
   });
+
+  const router = useRouter();
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
@@ -76,11 +79,23 @@ export default function DashboardScreen() {
 
         {(!stats?.listings || stats.listings.length === 0) && (
           <Card className="items-center py-8">
-            <Text className="text-3xl mb-2">🏥</Text>
-            <Text className="text-sm font-semibold text-text-primary">No listings yet</Text>
-            <Text className="text-xs text-text-secondary text-center mt-1">
-              Go to the Listings tab to create your first listing.
+            <Text className="text-4xl mb-3">👋</Text>
+            <Text className="text-base font-bold text-text-primary">Welcome to Breakthru Autism Services!</Text>
+            <Text className="text-sm text-text-secondary text-center mt-1 mb-5 px-4">
+              Is your clinic already listed? Search for it and claim it. Otherwise, create a brand-new listing.
             </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(business)/listings/claim')}
+              style={{ backgroundColor: '#0A66C2', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 14, marginBottom: 10, width: '100%', alignItems: 'center' }}
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>🔍 Claim My Existing Business</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/(business)/listings/new')}
+              style={{ borderWidth: 1, borderColor: '#0A66C2', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 14, width: '100%', alignItems: 'center' }}
+            >
+              <Text style={{ color: '#0A66C2', fontWeight: '600', fontSize: 15 }}>+ Create a New Listing</Text>
+            </TouchableOpacity>
           </Card>
         )}
       </ScrollView>

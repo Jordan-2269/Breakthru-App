@@ -28,14 +28,22 @@ export default function BusinessListingsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <View className="flex-row items-center justify-between px-4 pt-2 pb-3 bg-surface border-b border-border">
+      <View className="px-4 pt-2 pb-3 bg-surface border-b border-border">
         <Text className="text-xl font-bold text-text-primary">My Listings</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/(business)/listings/new')}
-          className="bg-primary rounded-full px-4 py-1.5"
-        >
-          <Text className="text-white text-sm font-medium">+ Add</Text>
-        </TouchableOpacity>
+        <View className="flex-row gap-2 mt-2">
+          <TouchableOpacity
+            onPress={() => router.push('/(business)/listings/claim')}
+            style={{ flex: 1, backgroundColor: '#0A66C2', borderRadius: 8, paddingVertical: 8, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 13 }}>🔍 Claim Existing</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(business)/listings/new')}
+            style={{ flex: 1, borderWidth: 1, borderColor: '#0A66C2', borderRadius: 8, paddingVertical: 8, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#0A66C2', fontWeight: '600', fontSize: 13 }}>+ Create New</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {isLoading && (

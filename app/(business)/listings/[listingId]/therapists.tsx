@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert, Modal, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Alert, Modal, ScrollView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -58,7 +58,13 @@ export default function TherapistsScreen() {
       qc.invalidateQueries({ queryKey: ['therapists', listingId] });
       closeModal();
     },
-    onError: (e: any) => Alert.alert('Error', e.message),
+    onError: (e: any) => {
+      if (Platform.OS === 'web') {
+        window.alert(`Error: ${e.message}`);
+      } else {
+        Alert.alert('Error', e.message);
+      }
+    },
   });
 
   const deleteTherapist = useMutation({
@@ -93,10 +99,16 @@ export default function TherapistsScreen() {
   }
 
   function confirmDelete(id: string) {
-    Alert.alert('Delete Therapist', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteTherapist.mutate(id) },
-    ]);
+    if (Platform.OS === 'web') {
+      if (window.confirm('Delete this therapist?')) {
+        deleteTherapist.mutate(id);
+      }
+    } else {
+      Alert.alert('Delete Therapist', 'Are you sure?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteTherapist.mutate(id) },
+      ]);
+    }
   }
 
   return (

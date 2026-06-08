@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Card } from '@/components/ui/Card';
-import { Avatar } from '@/components/ui/Avatar';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import type { ChildProfile, ChildNeed } from '@/types/app';
 import { useChildStore } from '@/store/childStore';
@@ -10,13 +9,27 @@ import { useChildStore } from '@/store/childStore';
 type Props = {
   child: ChildProfile;
   isActive?: boolean;
-  needsCount?: number;
 };
 
-export function ChildProfileCard({ child, isActive, needsCount }: Props) {
+export function ChildProfileCard({ child, isActive }: Props) {
   const router = useRouter();
   const setActiveChild = useChildStore((s) => s.setActiveChild);
   const setActiveChildNeeds = useChildStore((s) => s.setActiveChildNeeds);
+
+  const { data: needs } = useQuery({
+    queryKey: ['child-needs', child.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('child_service_needs')
+        .select('service_type_id, priority, service_types(name)')
+        .eq('child_id', child.id);
+      return (data ?? []).map((row: any) => ({
+        service_type_id: row.service_type_id,
+        service_name: row.service_types?.name ?? '',
+        priority: row.priority as 1 | 2 | 3,
+      })) as ChildNeed[];
+    },
+  });
 
   function calcAge(dob: string | null) {
     if (!dob) return null;
@@ -26,54 +39,105 @@ export function ChildProfileCard({ child, isActive, needsCount }: Props) {
 
   async function activateChild() {
     setActiveChild(child);
-    const { data } = await supabase
-      .from('child_service_needs')
-      .select('service_type_id, priority, service_types(name)')
-      .eq('child_id', child.id);
-    const needs: ChildNeed[] = (data ?? []).map((row: any) => ({
-      service_type_id: row.service_type_id,
-      service_name: row.service_types?.name ?? '',
-      priority: row.priority as 1 | 2 | 3,
-    }));
-    setActiveChildNeeds(needs);
+    setActiveChildNeeds(needs ?? []);
   }
 
   const age = calcAge(child.date_of_birth);
 
   return (
-    <Card className={`mb-3 ${isActive ? 'border-primary border-2' : ''}`}>
-      <View className="flex-row items-center">
-        <Avatar name={child.name} size="md" />
-        <View className="flex-1 ml-3">
-          <Text className="text-base font-semibold text-text-primary">{child.name}</Text>
-          <Text className="text-sm text-text-secondary">
-            {age != null ? `Age ${age}` : ''}
-            {age != null && child.autism_diagnosis ? ' · ' : ''}
-            {child.autism_diagnosis ?? ''}
+    <View style={{
+      backgroundColor: '#FFFFFF',
+      borderRadius: 14,
+      borderWidth: isActive ? 2 : 1,
+      borderColor: isActive ? '#0A66C2' : '#E8E8E8',
+      marginBottom: 12,
+      padding: 14,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      elevation: 2,
+    }}>
+      {/* Top row: avatar + name + buttons */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+        {/* Avatar */}
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#0A66C2', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 18 }}>
+            {child.name[0].toUpperCase()}
           </Text>
-          {needsCount != null && (
-            <Text className="text-xs text-text-tertiary mt-0.5">
-              {needsCount} service need{needsCount !== 1 ? 's' : ''}
-            </Text>
+        </View>
+
+        {/* Name + info */}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: '#191919' }}>{child.name}</Text>
+          <Text style={{ fontSize: 13, color: '#777', marginTop: 2 }}>
+            {[age != null ? `Age ${age}` : null, child.autism_diagnosis].filter(Boolean).join(' · ')}
+          </Text>
+          {isActive && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#0D9E5C' }} />
+              <Text style={{ fontSize: 11, color: '#0D9E5C', fontWeight: '700' }}>Active — matching services to this child</Text>
+            </View>
           )}
         </View>
-        <View className="gap-2">
+
+        {/* Buttons */}
+        <View style={{ gap: 6 }}>
           <TouchableOpacity
             onPress={activateChild}
-            className={`border rounded-full px-3 py-1 ${isActive ? 'bg-primary border-primary' : 'border-primary'}`}
+            style={{
+              borderRadius: 20,
+              paddingHorizontal: 12,
+              paddingVertical: 5,
+              backgroundColor: isActive ? '#0A66C2' : 'transparent',
+              borderWidth: 1,
+              borderColor: '#0A66C2',
+            }}
           >
-            <Text className={`text-xs font-medium ${isActive ? 'text-white' : 'text-primary'}`}>
-              {isActive ? 'Active' : 'Set Active'}
+            <Text style={{ fontSize: 11, fontWeight: '700', color: isActive ? '#FFFFFF' : '#0A66C2' }}>
+              {isActive ? '✓ Active' : 'Set Active'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push(`/(parent)/profile/child/${child.id}`)}
-            className="border border-border rounded-full px-3 py-1"
+            style={{ borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: '#D0D0D0' }}
           >
-            <Text className="text-xs text-text-secondary">Edit</Text>
+            <Text style={{ fontSize: 11, color: '#666', fontWeight: '600' }}>Edit</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </Card>
+
+      {/* Service needs chips */}
+      {needs && needs.length > 0 ? (
+        <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {needs.map((n) => (
+            <View
+              key={n.service_type_id}
+              style={{
+                backgroundColor: isActive ? '#EAF0F9' : '#F5F5F5',
+                borderRadius: 20,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderWidth: 1,
+                borderColor: isActive ? '#C0D8F0' : '#E0E0E0',
+              }}
+            >
+              <Text style={{ fontSize: 11, color: isActive ? '#0A66C2' : '#555', fontWeight: '600' }}>
+                {n.service_name}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <TouchableOpacity
+          onPress={() => router.push(`/(parent)/profile/child/${child.id}`)}
+          style={{ marginTop: 10 }}
+        >
+          <Text style={{ fontSize: 12, color: '#999' }}>
+            No service needs set · <Text style={{ color: '#0A66C2' }}>Add needs →</Text>
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }

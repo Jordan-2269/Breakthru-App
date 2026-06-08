@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
@@ -12,16 +12,18 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   async function handleSignIn() {
+    setErrorMsg('');
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Please enter your email and password.');
+      setErrorMsg('Please enter your email and password.');
       return;
     }
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) Alert.alert('Sign In Failed', error.message);
+    if (error) setErrorMsg(error.message);
   }
 
   return (
@@ -33,7 +35,7 @@ export default function SignInScreen() {
         </TouchableOpacity>
 
         <Text className="text-3xl font-bold text-text-primary mb-2">Sign In</Text>
-        <Text className="text-text-secondary mb-8">Welcome back to Breakthru</Text>
+        <Text className="text-text-secondary mb-8">Welcome back to Breakthru Autism Services</Text>
 
         <Input
           label="Email"
@@ -62,6 +64,12 @@ export default function SignInScreen() {
         >
           <Text className="text-primary text-sm">Forgot password?</Text>
         </TouchableOpacity>
+
+        {errorMsg !== '' && (
+          <View style={{ backgroundColor: '#FFF0F0', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FFCCCC' }}>
+            <Text style={{ color: '#CC0000', fontSize: 13 }}>{errorMsg}</Text>
+          </View>
+        )}
 
         <Button label="Sign In" onPress={handleSignIn} loading={loading} fullWidth size="lg" />
 

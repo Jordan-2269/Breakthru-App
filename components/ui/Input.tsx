@@ -15,6 +15,7 @@ export function Input({
   leftIcon,
   rightIcon,
   onRightIconPress,
+  style,
   ...props
 }: Props) {
   const [focused, setFocused] = useState(false);
@@ -39,6 +40,7 @@ export function Input({
           placeholderTextColor="#999999"
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          style={[{ outlineWidth: 0, outlineStyle: 'none' } as any, style]}
           {...props}
         />
         {rightIcon && (

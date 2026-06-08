@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
@@ -16,14 +16,16 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   async function handleSignUp() {
+    setErrorMsg('');
     if (!displayName.trim() || !email.trim() || !password.trim()) {
-      Alert.alert('Missing fields', 'Please fill in all fields.');
+      setErrorMsg('Please fill in all fields.');
       return;
     }
     if (password.length < 8) {
-      Alert.alert('Weak password', 'Password must be at least 8 characters.');
+      setErrorMsg('Password must be at least 8 characters.');
       return;
     }
     setLoading(true);
@@ -35,7 +37,7 @@ export default function SignUpScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Sign Up Failed', error.message);
+      setErrorMsg(error.message);
       return;
     }
 
@@ -86,7 +88,7 @@ export default function SignUpScreen() {
         </TouchableOpacity>
 
         <Text className="text-3xl font-bold text-text-primary mb-2">Create Account</Text>
-        <Text className="text-text-secondary mb-6">Join the Breakthru community</Text>
+        <Text className="text-text-secondary mb-6">Join the Breakthru Autism Services community</Text>
 
         {/* Role selector */}
         <Text className="text-sm font-medium text-text-primary mb-3">I am a...</Text>
@@ -108,7 +110,7 @@ export default function SignUpScreen() {
               <Text className="text-xs text-text-secondary text-center mt-1">
                 {r === 'parent'
                   ? 'Find services for my child'
-                  : 'List my clinic or practice'}
+                  : 'Claim or list your clinic'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -135,6 +137,12 @@ export default function SignUpScreen() {
           placeholder="Min. 8 characters"
           secureTextEntry
         />
+
+        {errorMsg !== '' && (
+          <View style={{ backgroundColor: '#FFF0F0', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FFCCCC' }}>
+            <Text style={{ color: '#CC0000', fontSize: 13 }}>{errorMsg}</Text>
+          </View>
+        )}
 
         <Button label="Create Account" onPress={handleSignUp} loading={loading} fullWidth size="lg" />
 

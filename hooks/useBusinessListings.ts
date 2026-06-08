@@ -8,10 +8,11 @@ import type { MatchedListing } from '@/types/app';
 export function useBusinessListings() {
   const userCoords = useUIStore((s) => s.userCoords);
   const filters = useUIStore((s) => s.filters);
+  const activeChild = useChildStore((s) => s.activeChild);
   const activeChildNeeds = useChildStore((s) => s.activeChildNeeds);
 
   return useQuery({
-    queryKey: ['listings', userCoords, filters],
+    queryKey: ['listings', userCoords, filters, activeChild?.id ?? null],
     queryFn: async (): Promise<MatchedListing[]> => {
       if (!userCoords) return [];
 

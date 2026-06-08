@@ -37,7 +37,7 @@ export function BusinessCard({ listing, showMatchScore = true, highlighted = fal
     ? listing.distance_km < 1 ? '<1 km away' : `${listing.distance_km.toFixed(1)} km away`
     : null;
 
-  const hasScore = showMatchScore && listing.matchScore > 0;
+  const hasScore = showMatchScore;
   const scoreColor = hasScore ? getMatchColor(listing.matchScore) : null;
   const scoreLabel = hasScore ? getMatchLabel(listing.matchScore) : null;
 
