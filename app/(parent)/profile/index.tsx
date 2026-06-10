@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function ParentProfileScreen() {
   const router = useRouter();
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { data: children } = useChildProfiles();
   const activeChild = useChildStore((s) => s.activeChild);
   const { pickAndUpload, isUploading } = useUpdateAvatar();
@@ -113,6 +113,13 @@ export default function ParentProfileScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+          {/* Account */}
+          <SectionTitle title="Account" />
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E0DFDB', paddingHorizontal: 16, paddingVertical: 14, marginBottom: 16 }}>
+            <Text style={{ fontSize: 12, color: '#888', marginBottom: 2 }}>Email</Text>
+            <Text style={{ fontSize: 14, color: '#191919', fontWeight: '500' }}>{user?.email ?? '—'}</Text>
+          </View>
 
           {/* Sign Out */}
           <TouchableOpacity
