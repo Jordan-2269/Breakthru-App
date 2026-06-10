@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -33,14 +33,21 @@ export default function EditListingScreen() {
     },
   });
 
+  type ServicePrice = { price_from: string; price_to: string; price_unit: string };
+
   const { data: currentServices } = useQuery({
     queryKey: ['listing-services', listingId],
-    queryFn: async (): Promise<string[]> => {
+    queryFn: async (): Promise<{ id: string; price_from: number | null; price_to: number | null; price_unit: string }[]> => {
       const { data } = await supabase
         .from('business_services')
-        .select('service_type_id')
+        .select('service_type_id, price_from, price_to, price_unit')
         .eq('listing_id', listingId);
-      return (data ?? []).map((r: any) => r.service_type_id as string);
+      return (data ?? []).map((r: any) => ({
+        id: r.service_type_id as string,
+        price_from: r.price_from ?? null,
+        price_to: r.price_to ?? null,
+        price_unit: r.price_unit ?? 'session',
+      }));
     },
   });
 
@@ -54,6 +61,7 @@ export default function EditListingScreen() {
   const [state, setState] = useState('');
   const [zip, setZip] = useState('');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [servicePrices, setServicePrices] = useState<Record<string, { price_from: string; price_to: string; price_unit: string }>>({});
 
   useEffect(() => {
     if (listing) {
@@ -70,7 +78,18 @@ export default function EditListingScreen() {
   }, [listing]);
 
   useEffect(() => {
-    if (currentServices) setSelectedServices(currentServices);
+    if (currentServices) {
+      setSelectedServices(currentServices.map((s) => s.id));
+      const prices: Record<string, { price_from: string; price_to: string; price_unit: string }> = {};
+      currentServices.forEach((s) => {
+        prices[s.id] = {
+          price_from: s.price_from != null ? String(s.price_from) : '',
+          price_to: s.price_to != null ? String(s.price_to) : '',
+          price_unit: s.price_unit ?? 'session',
+        };
+      });
+      setServicePrices(prices);
+    }
   }, [currentServices]);
 
   function toggleService(id: string) {
@@ -94,11 +113,20 @@ export default function EditListingScreen() {
         .eq('id', listingId);
       if (listingError) throw listingError;
 
-      // Replace services: delete all then re-insert selected
+      // Replace services: delete all then re-insert selected with prices
       await supabase.from('business_services').delete().eq('listing_id', listingId);
       if (selectedServices.length > 0) {
         const { error: servicesError } = await supabase.from('business_services').insert(
-          selectedServices.map((id) => ({ listing_id: listingId, service_type_id: id })),
+          selectedServices.map((id) => {
+            const p = servicePrices[id];
+            return {
+              listing_id: listingId,
+              service_type_id: id,
+              price_from: p?.price_from ? parseFloat(p.price_from) : null,
+              price_to: p?.price_to ? parseFloat(p.price_to) : null,
+              price_unit: p?.price_unit || 'session',
+            };
+          }),
         );
         if (servicesError) throw servicesError;
       }
@@ -189,7 +217,7 @@ export default function EditListingScreen() {
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#191919', marginTop: 4, marginBottom: 10 }}>
           Services Offered
         </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
           {serviceTypes?.map((s) => (
             <TouchableOpacity
               key={s.id}
@@ -210,6 +238,55 @@ export default function EditListingScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Price inputs for selected services */}
+        {selectedServices.length > 0 && (
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ fontSize: 13, color: '#666', marginBottom: 10 }}>
+              Pricing (optional — leave blank to hide prices)
+            </Text>
+            {selectedServices.map((id) => {
+              const svc = serviceTypes?.find((s) => s.id === id);
+              const p = servicePrices[id] ?? { price_from: '', price_to: '', price_unit: 'session' };
+              return (
+                <View key={id} style={{ backgroundColor: '#FFF', borderRadius: 10, borderWidth: 1, borderColor: '#E0E0E0', padding: 12, marginBottom: 10 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#191919', marginBottom: 8 }}>{svc?.name}</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>From ($)</Text>
+                      <TextInput
+                        value={p.price_from}
+                        onChangeText={(v) => setServicePrices((prev) => ({ ...prev, [id]: { ...p, price_from: v } }))}
+                        placeholder="e.g. 100"
+                        keyboardType="numeric"
+                        style={{ borderWidth: 1, borderColor: '#D0D0D0', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, outlineWidth: 0 } as any}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>To ($)</Text>
+                      <TextInput
+                        value={p.price_to}
+                        onChangeText={(v) => setServicePrices((prev) => ({ ...prev, [id]: { ...p, price_to: v } }))}
+                        placeholder="e.g. 150"
+                        keyboardType="numeric"
+                        style={{ borderWidth: 1, borderColor: '#D0D0D0', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, outlineWidth: 0 } as any}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Per</Text>
+                      <TextInput
+                        value={p.price_unit}
+                        onChangeText={(v) => setServicePrices((prev) => ({ ...prev, [id]: { ...p, price_unit: v } }))}
+                        placeholder="session"
+                        style={{ borderWidth: 1, borderColor: '#D0D0D0', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, outlineWidth: 0 } as any}
+                      />
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {errorMsg !== '' && (
           <View style={{ backgroundColor: '#FFF0F0', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FFCCCC' }}>

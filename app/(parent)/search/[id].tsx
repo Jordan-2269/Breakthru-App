@@ -162,17 +162,17 @@ export default function BusinessDetailScreen() {
           {listing.services && listing.services.length > 0 && (
             <View>
               <SectionTitle title="Services Offered" />
-              <View className="flex-row flex-wrap gap-2">
+              <View style={{ gap: 8 }}>
                 {listing.services.map((s: any) => (
-                  <View key={s.service_type_id} className="bg-primary-light rounded-full px-3 py-1.5">
-                    <Text className="text-primary text-sm font-medium">
+                  <View key={s.service_type_id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EAF0F9', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#0A66C2', flex: 1 }}>
                       {s.service_type?.name ?? ''}
                     </Text>
-                    {s.price_from && (
-                      <Text className="text-xs text-text-secondary">
-                        ${s.price_from}{s.price_to ? `–$${s.price_to}` : '+'}/{s.price_unit}
+                    {s.price_from ? (
+                      <Text style={{ fontSize: 13, color: '#444', fontWeight: '500' }}>
+                        ${s.price_from}{s.price_to ? `–$${s.price_to}` : '+'}/{s.price_unit ?? 'session'}
                       </Text>
-                    )}
+                    ) : null}
                   </View>
                 ))}
               </View>
