@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
@@ -11,17 +11,19 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   async function handleReset() {
+    setErrorMsg('');
     if (!email.trim()) {
-      Alert.alert('Please enter your email.');
+      setErrorMsg('Please enter your email.');
       return;
     }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     setLoading(false);
     if (error) {
-      Alert.alert('Error', error.message);
+      setErrorMsg(error.message);
     } else {
       setSent(true);
     }
@@ -55,6 +57,11 @@ export default function ForgotPasswordScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
           />
+          {errorMsg !== '' && (
+            <View style={{ backgroundColor: '#FFF0F0', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FFCCCC' }}>
+              <Text style={{ color: '#CC0000', fontSize: 13 }}>{errorMsg}</Text>
+            </View>
+          )}
           <Button label="Send Reset Link" onPress={handleReset} loading={loading} fullWidth />
         </>
       )}
