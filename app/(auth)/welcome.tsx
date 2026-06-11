@@ -123,6 +123,16 @@ export default function WelcomeScreen() {
           <Text style={{ textAlign: 'center', fontSize: 12, color: '#909090', marginTop: 4 }}>
             Free for families · Businesses list from $0/month
           </Text>
+
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/for-businesses')}
+            activeOpacity={0.7}
+            style={{ alignItems: 'center', marginTop: 8, paddingVertical: 6 }}
+          >
+            <Text style={{ fontSize: 13, color: '#1D9BF0', fontWeight: '700' }}>
+              Are you a provider? List your business →
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
