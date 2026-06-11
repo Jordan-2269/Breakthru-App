@@ -12,6 +12,7 @@ type Props = {
   listing: MatchedListing;
   showMatchScore?: boolean;
   highlighted?: boolean;
+  compact?: boolean;
 };
 
 const ACCENT_COLORS: Record<string, string> = {
@@ -24,7 +25,7 @@ const ACCENT_COLORS: Record<string, string> = {
   Y: '#975A16', Z: '#2C7A7B',
 };
 
-export function BusinessCard({ listing, showMatchScore = true, highlighted = false }: Props) {
+export function BusinessCard({ listing, showMatchScore = true, highlighted = false, compact = false }: Props) {
   const router = useRouter();
   const { data: savedIds } = useSavedListingIds();
   const { mutate: toggleSave } = useToggleSaveListing();
@@ -39,6 +40,84 @@ export function BusinessCard({ listing, showMatchScore = true, highlighted = fal
 
   const scoreColor = showMatchScore ? getMatchColor(listing.matchScore) : null;
   const scoreLabel = showMatchScore ? getMatchLabel(listing.matchScore) : null;
+
+  if (compact) {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.92}
+        onPress={() => router.push(`/(parent)/search/${listing.id}`)}
+        style={{ flex: 1, margin: 2 }}
+      >
+        <View style={{
+          borderRadius: 10,
+          overflow: 'hidden',
+          backgroundColor: '#FFFFFF',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.09,
+          shadowRadius: 6,
+          elevation: 3,
+          borderWidth: highlighted ? 2 : 0,
+          borderColor: highlighted ? '#1D9BF0' : 'transparent',
+        }}>
+          {/* Square thumbnail */}
+          <View style={{ aspectRatio: 1, width: '100%', position: 'relative' }}>
+            {listing.cover_image_url ? (
+              <Image source={{ uri: listing.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+            ) : (
+              <View style={{ flex: 1, backgroundColor: accentColor, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 36, fontWeight: '900', color: 'rgba(255,255,255,0.92)' }}>{initial}</Text>
+              </View>
+            )}
+            {/* Save button */}
+            <TouchableOpacity
+              onPress={() => toggleSave({ listingId: listing.id, isSaved })}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{
+                position: 'absolute', top: 6, left: 6,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                borderRadius: 14, width: 26, height: 26,
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 11 }}>{isSaved ? '🔖' : '🏷️'}</Text>
+            </TouchableOpacity>
+            {/* Match badge */}
+            {showMatchScore && (
+              <View style={{ position: 'absolute', top: 6, right: 6 }}>
+                <MatchScoreBadge score={listing.matchScore} size="sm" />
+              </View>
+            )}
+            {listing.accepting_new_clients === false && (
+              <View style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0,
+                backgroundColor: 'rgba(0,0,0,0.65)',
+                paddingVertical: 3, alignItems: 'center',
+              }}>
+                <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '700', letterSpacing: 0.3 }}>CLOSED</Text>
+              </View>
+            )}
+          </View>
+          {/* Info */}
+          <View style={{ padding: 8 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: '#0F0F0F', lineHeight: 17 }} numberOfLines={1}>
+              {listing.name}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+              <Text style={{ fontSize: 11, color: '#F59E0B' }}>★</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F0F0F' }}>{listing.avg_rating.toFixed(1)}</Text>
+              {listing.review_count > 0 && (
+                <Text style={{ fontSize: 11, color: '#909090' }}>({listing.review_count})</Text>
+              )}
+            </View>
+            {cityState ? (
+              <Text style={{ fontSize: 11, color: '#909090', marginTop: 2 }} numberOfLines={1}>{cityState}</Text>
+            ) : null}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity

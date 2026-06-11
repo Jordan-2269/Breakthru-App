@@ -125,13 +125,15 @@ export default function SearchScreen() {
             <FlatList
               data={listings}
               keyExtractor={(item) => item.id}
+              numColumns={2}
               renderItem={({ item }) => (
                 <BusinessCard
                   listing={item}
                   highlighted={selectedListing?.id === item.id}
+                  compact
                 />
               )}
-              contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+              contentContainerStyle={{ padding: 6, paddingBottom: 32 }}
               showsVerticalScrollIndicator={false}
             />
           )}
