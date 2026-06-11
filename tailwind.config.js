@@ -10,19 +10,20 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0A66C2',
-          light: '#EAF0F9',
-          dark: '#004182',
+          DEFAULT: '#1D9BF0',
+          light: '#E8F5FE',
+          dark: '#0D7AC5',
         },
         surface: '#FFFFFF',
-        background: '#F3F2EE',
-        border: '#E0DFDB',
-        success: '#057642',
-        warning: '#B24020',
+        background: '#F7F7F7',
+        border: '#E7E7E7',
+        success: '#00BA7C',
+        warning: '#FF6B35',
+        accent: '#FF0000',
         text: {
-          primary: '#191919',
-          secondary: '#666666',
-          tertiary: '#999999',
+          primary: '#0F0F0F',
+          secondary: '#606060',
+          tertiary: '#909090',
         },
       },
       fontFamily: {

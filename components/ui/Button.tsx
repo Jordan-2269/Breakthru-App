@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, ActivityIndicator, View, StyleSheet } from 'react-native';
 
 type Variant = 'filled' | 'outlined' | 'ghost';
 type Size = 'sm' | 'md' | 'lg';
@@ -15,10 +15,10 @@ type Props = {
   icon?: React.ReactNode;
 };
 
-const sizeClasses: Record<Size, { container: string; text: string }> = {
-  sm: { container: 'py-1.5 px-3', text: 'text-sm' },
-  md: { container: 'py-2.5 px-5', text: 'text-base' },
-  lg: { container: 'py-3.5 px-7', text: 'text-lg' },
+const SIZE: Record<Size, { paddingVertical: number; paddingHorizontal: number; fontSize: number }> = {
+  sm: { paddingVertical: 8, paddingHorizontal: 16, fontSize: 13 },
+  md: { paddingVertical: 12, paddingHorizontal: 22, fontSize: 15 },
+  lg: { paddingVertical: 16, paddingHorizontal: 28, fontSize: 17 },
 };
 
 export function Button({
@@ -32,33 +32,54 @@ export function Button({
   icon,
 }: Props) {
   const isDisabled = disabled || loading;
+  const s = SIZE[size];
 
-  const containerBase = `rounded-full flex-row items-center justify-center ${sizeClasses[size].container}`;
-  const containerVariant =
-    variant === 'filled'
-      ? `bg-primary ${isDisabled ? 'opacity-50' : ''}`
-      : variant === 'outlined'
-      ? `border border-primary ${isDisabled ? 'opacity-50' : ''}`
-      : `${isDisabled ? 'opacity-50' : ''}`;
+  const containerStyle: any = {
+    borderRadius: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: s.paddingVertical,
+    paddingHorizontal: s.paddingHorizontal,
+    alignSelf: fullWidth ? undefined : 'flex-start',
+    width: fullWidth ? '100%' : undefined,
+    opacity: isDisabled ? 0.5 : 1,
+    ...(variant === 'filled' ? {
+      backgroundColor: '#1D9BF0',
+      shadowColor: '#1D9BF0',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 10,
+      elevation: 6,
+    } : variant === 'outlined' ? {
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderColor: '#1D9BF0',
+    } : {
+      backgroundColor: 'transparent',
+    }),
+  };
 
-  const textVariant =
-    variant === 'filled'
-      ? `text-white font-semibold ${sizeClasses[size].text}`
-      : `text-primary font-semibold ${sizeClasses[size].text}`;
+  const textStyle: any = {
+    fontSize: s.fontSize,
+    fontWeight: '800',
+    color: variant === 'filled' ? '#FFFFFF' : '#1D9BF0',
+    letterSpacing: 0.2,
+  };
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={isDisabled}
-      className={`${containerBase} ${containerVariant} ${fullWidth ? 'w-full' : 'self-start'}`}
-      activeOpacity={0.8}
+      style={containerStyle}
+      activeOpacity={0.82}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={variant === 'filled' ? '#fff' : '#0A66C2'} />
+        <ActivityIndicator size="small" color={variant === 'filled' ? '#fff' : '#1D9BF0'} />
       ) : (
         <>
-          {icon && <View className="mr-1.5">{icon}</View>}
-          <Text className={textVariant}>{label}</Text>
+          {icon && <View style={{ marginRight: 7 }}>{icon}</View>}
+          <Text style={textStyle}>{label}</Text>
         </>
       )}
     </TouchableOpacity>
